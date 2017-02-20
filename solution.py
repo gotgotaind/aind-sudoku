@@ -1,3 +1,6 @@
+import traceback
+import logging
+
 assignments = []
 
 
@@ -60,6 +63,7 @@ def grid_values(grid):
         if value == ".":
             value = '123456789'
         sudoku[boxes[i]]=value
+        #assign_value(sudoku, boxes[i], value)
         i=i+1
         
     return sudoku
@@ -86,7 +90,8 @@ def eliminate(values):
                 for possible_peer_value in values[peer]:
                     if ( possible_peer_value != value ):
                         new_peer_value=new_peer_value+possible_peer_value
-                values[peer]=new_peer_value
+                #values[peer]=new_peer_value
+                assign_value(values, peer, new_peer_value)
     
     return values   
 
@@ -106,7 +111,8 @@ def only_choice(values):
             #print (i,possible_positions)
             if ( possible_positions == 1 ):
                 #print ("only possible position for ",i," is ",matched_box)
-                values[matched_box]=i
+                #values[matched_box]=i
+                assign_value(values, matched_box, i)
             
         
     return values
@@ -159,7 +165,8 @@ def search(values):
         # Now use recursion to solve each one of the resulting sudokus, and if one returns a value (not False), return that answer!
     for possible_value in values[smallest_box]:
         new_values=values.copy()
-        new_values[smallest_box]=possible_value
+        #new_values[smallest_box]=possible_value
+        assign_value(new_values, smallest_box, possible_value)
         attempt=search(new_values)
         #make it stop the for loop it is has found a solution
         if attempt:
@@ -186,5 +193,6 @@ if __name__ == '__main__':
 
     except SystemExit:
         pass
-    except:
+    except Exception as e:
         print('We could not visualize your board due to a pygame issue. Not a problem! It is not a requirement.')
+        logging.error(traceback.format_exc())
