@@ -1,5 +1,6 @@
 import traceback
 import logging
+import re
 
 assignments = []
 
@@ -15,7 +16,9 @@ boxes = cross(rows, cols)
 row_units = [cross(r, cols) for r in rows]
 column_units = [cross(rows, c) for c in cols]
 square_units = [cross(rs, cs) for rs in ('ABC','DEF','GHI') for cs in ('123','456','789')]
-unitlist = row_units + column_units + square_units
+diagonal_units=[[rows[i]+cols[i] for i in range(9)],[rows[8-i]+cols[i] for i in range(9)]]
+        
+unitlist = row_units + column_units + square_units + diagonal_units
 units = dict((s, [u for u in unitlist if s in u]) for s in boxes)
 peers = dict((s, set(sum(units[s],[]))-set([s])) for s in boxes)
 
@@ -41,6 +44,27 @@ def naked_twins(values):
 
     # Find all instances of naked twins
     # Eliminate the naked twins as possibilities for their peers
+    
+    for unit in unitlist:
+        for box1 in unit:
+            if len(values[box1])==2:
+                #search for another box with the same possible values
+                for box2 in unit:
+                    if ((box1!=box2) and (values[box1]==values[box2])):
+                        #removes the twin values from all other box in the unit
+                        for box3 in unit:
+                            if ((box3!=box1) and (box3!=box2)):
+                                box3_v=values[box3]
+                                box1_v=values[box1]
+                                #not necessary but easier to check the algo is working as intented
+                                if ( re.search(box1_v[0],box3_v) or re.search(box1_v[1],box3_v) ):
+                                    box3_nv=box3_v
+                                    box3_nv=box3_nv.replace(box1_v[0],'')
+                                    box3_nv=box3_nv.replace(box1_v[1],'')
+                                    assign_value(values, box3, box3_nv)
+                                    pass
+    return(values)
+    
 
 def cross(A, B):
     "Cross product of elements in A and elements in B."
@@ -63,7 +87,6 @@ def grid_values(grid):
         if value == ".":
             value = '123456789'
         sudoku[boxes[i]]=value
-        #assign_value(sudoku, boxes[i], value)
         i=i+1
         
     return sudoku
@@ -90,28 +113,20 @@ def eliminate(values):
                 for possible_peer_value in values[peer]:
                     if ( possible_peer_value != value ):
                         new_peer_value=new_peer_value+possible_peer_value
-                #values[peer]=new_peer_value
                 assign_value(values, peer, new_peer_value)
     
     return values   
 
 def only_choice(values):
     for unit in unitlist:
-        #print ("boxes : ",unit)
-        #print ( "values of unit :",[values[box] for box in unit] )
         for i in range(1,10):
-            #print ( "testing ",i)
             i=str(i)
             possible_positions=0
             for box in unit:
                 if ( i in values[box] ):
-                    #print (i,values[box])
                     possible_positions=possible_positions+1
                     matched_box=box
-            #print (i,possible_positions)
             if ( possible_positions == 1 ):
-                #print ("only possible position for ",i," is ",matched_box)
-                #values[matched_box]=i
                 assign_value(values, matched_box, i)
             
         
@@ -127,6 +142,8 @@ def reduce_puzzle(values):
         values=eliminate(values)
         # Your code here: Use the Only Choice Strategy
         values=only_choice(values)
+        #now with the naked twins strategy
+        values=naked_twins(values)
         # Check how many boxes have a determined value, to compare
         solved_values_after = len([box for box in values.keys() if len(values[box]) == 1])
         # If no new values were added, stop the loop.
@@ -140,7 +157,6 @@ def search(values):
     "Using depth-first search and propagation, create a search tree and solve the sudoku."
     # First, reduce the puzzle using the previous function
     values=reduce_puzzle(values)
-    #print ("new values", values)
     if values is False:
         return False
         
@@ -148,27 +164,22 @@ def search(values):
     smallest_box_size=9
     smallest_box='solved!'
     for box,value in values.items():
-        #print ("box value", box, value)
         if ( (len(value) <= smallest_box_size) and ( len(value) > 1 ) ):
             smallest_box=box
             smallest_box_size=len(value)
             
     if ( smallest_box == 'solved!' ):
         print('It  is solved!')
-        #width = 1+max(len(values[s]) for s in boxes)
-        #print ("width",width)
-        #print (values)
-        #display(values)
-        #values
         return values
     
         # Now use recursion to solve each one of the resulting sudokus, and if one returns a value (not False), return that answer!
     for possible_value in values[smallest_box]:
         new_values=values.copy()
-        #new_values[smallest_box]=possible_value
         assign_value(new_values, smallest_box, possible_value)
         attempt=search(new_values)
         #make it stop the for loop it is has found a solution
+        #else it would continue to search other branches for a good solution and it seems
+        #it can take a long time
         if attempt:
             return attempt
 
@@ -195,4 +206,3 @@ if __name__ == '__main__':
         pass
     except Exception as e:
         print('We could not visualize your board due to a pygame issue. Not a problem! It is not a requirement.')
-        logging.error(traceback.format_exc())
