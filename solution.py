@@ -65,7 +65,55 @@ def naked_twins(values):
                                     pass
     return(values)
     
+def naked_tuples(values):
+    """Eliminate values using the naked tuples strategy.
+    Args:
+        values(dict): a dictionary of the form {'box_name': '123456789', ...}
 
+    Returns:
+        the values dictionary with the naked tuples eliminated from peers.
+    """
+    
+    for unit in unitlist:
+        
+        # for each unit, build a reverse dictionary of the list of boxes
+        # having the same possible values
+        rev_val=dict()
+        for box in unit:
+            v_box=values[box]
+            
+            # If the 'list of possible values' is already a key, append the box
+            # to the existing list,
+            # else initialize a new list
+            if v_box in rev_val.keys():
+                rev_val[v_box].append(box)
+            else:
+                rev_val[v_box]=[box]
+            pass
+    
+        for tuple_v,tuple_box_list in rev_val.items():
+            
+            #if there are as many possibles values as the number of boxes for which
+            #those values are the only possible values.
+            #we can eliminate those values of the possible values of other boxes in the
+            #same unit            
+            if ( len(tuple_v)==len(tuple_box_list) ):
+                for box in unit:
+                    if box not in tuple_box_list:
+                        box_v=values[box]
+                        #remove each possible values of the tuple from the target box                        
+                        for v in tuple_v:
+                            if v in values[box]:
+                                box_v=box_v.replace(v,'')
+                        if box_v!=values[box]:
+                            assign_value(values, box, box_v)
+    
+    return(values)
+                
+                
+        
+        
+    
 def cross(A, B):
     "Cross product of elements in A and elements in B."
     return [s+t for s in a for t in b]
@@ -143,7 +191,9 @@ def reduce_puzzle(values):
         # Your code here: Use the Only Choice Strategy
         values=only_choice(values)
         #now with the naked twins strategy
-        values=naked_twins(values)
+        #values=naked_twins(values)
+        #now with the naked tuples strategy
+        values=naked_tuples(values)
         # Check how many boxes have a determined value, to compare
         solved_values_after = len([box for box in values.keys() if len(values[box]) == 1])
         # If no new values were added, stop the loop.
